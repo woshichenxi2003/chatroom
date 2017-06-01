@@ -1,0 +1,5 @@
+var server = require('../app');
+var config = require('../config')
+server.listen(config.port);
+console.log('聊天室服务已经启动 端口3000');
+console.log(process.pid)
