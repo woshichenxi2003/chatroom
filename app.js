@@ -1,5 +1,5 @@
 const config = require('./config')
-const indexR = require('./contoller/index');
+const indexR = require('./contoller/index.js');
 const serve = require('koa-static');
 const render = require('koa-ejs');
 const json = require('koa-json')
@@ -32,5 +32,5 @@ app.use(async(ctx, next) => {
 })
 
 app.use(indexR.allowedMethods());
-// let chat = new Chat(server);
+let chat = new Chat(server);
 module.exports = server;
