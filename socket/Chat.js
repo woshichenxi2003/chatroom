@@ -21,7 +21,7 @@ class Chat {
                 socket.join(data.room);
                 // 用户加入选定房间
                 socket.broadcast.to(userinfo.room).emit('showhello', data.name);
-                socket.emit('showhello', '您');
+                // socket.emit('showhello', '您');
 
             });
             socket.on('msg', (data) => {
