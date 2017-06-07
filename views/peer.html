@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="js/assert/peer.js"></script>
+
+</head>
+
+<body>
+    <p>
+
+    </p>
+    <p>
+        <input type="text" name="" id="inputbox" value="">
+        <button type="button" id="btn">连接另一个实例</button>
+    </p>
+    <p>
+        <input type="text" name="" id="inputbox1" value="">
+        <button type="button" id="btn1">发送信息</button>
+    </p>
+    <div id="databox"></div>
+    <script>
+        let oBtn = document.querySelector('#btn');
+        let oInput = document.querySelector('#inputbox');
+        let oBtn1 = document.querySelector('#btn1');
+        let oInput1 = document.querySelector('#inputbox1');
+        let oBox = document.querySelector('#databox');
+        var connectedPeers = {};
+        let peer = new Peer('<%= id %>', {
+            host: 'localhost',
+            port: 9000,
+            path: '/myapp',
+            debug: 3,
+            config: {
+                'iceServers': [{
+                    url: 'stun:stun.l.google.com:19302'
+                }]
+            }
+        });
+        peer.on('open', function(id) {
+            console.log(id);
+        });
+        peer.on('connection', (c) => {
+            console.log('显示连接的id' + c.peer);
+            connectedPeers[c.peer] = c;
+            console.log(connectedPeers);
+            c.on('data', function(data) {
+                console.log('有信息来了')
+                oBox.innerHTML = oBox.innerHTML + '<br/>' + data;
+            });
+            c.on('close', function() {
+                alert(c.peer + ' 已断开.');
+            });
+
+
+        });
+        peer.on('error', function(err) {
+            console.log(err);
+        })
+        oBtn.addEventListener('click', () => {
+            let conn = peer.connect(oInput.value, {
+                label: 'chat',
+            });
+            conn.on('open', function() {
+                connectedPeers[conn] = conn;
+                // conn.on('data', function(data) {
+                //     console.log('对方有数据返回'); //无反应
+                //     oBox.innerHTML = oBox.innerHTML + data;
+                // });
+                // conn.on('close', function() {
+                //     alert(conn.peer + ' has left the chat.');
+                // });
+                // conn.send('你好'); //无反应
+            });
+
+            conn.on('error', function(err) {
+                alert(err);
+            });
+        })
+        oBtn1.addEventListener('click', function() {
+            console.log(oInput1.value)
+            for (key in connectedPeers) {
+                console.log(connectedPeers[key]);
+                connectedPeers[key].send(oInput1.value);
+            }
+        });
+    </script>
+</body>
+
+</html>

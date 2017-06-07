@@ -1,7 +1,18 @@
 const router = require('koa-router')();
 const con = require('../model/apiCon.js');
+let idStr = 0;
 router.get('/chat', async(ctx, next) => {
     await ctx.render('index');
+});
+router.get('/peer', async(ctx, next) => {
+    await ctx.render('peer', { id: idStr });
+    // await ctx.render('peer', { id: idStr });
+    idStr = idStr + 1;
+});
+router.get('/peer1', async(ctx, next) => {
+
+    await ctx.render('peertest');
+
 });
 router.get('/getuser', con.getuser());
 // http://localhost:3000/getuser?roomid=0

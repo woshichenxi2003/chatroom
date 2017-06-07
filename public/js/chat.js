@@ -52,33 +52,44 @@ class Chat {
                     });
 
                     this.oBtn.addEventListener('click', () => {
-                        var oInputValue = this.oIpnt.value;
-                        if (!this.oIpnt.value) return alert("亲 您什么都没写");
-                        this.oList.innerHTML = this.oList.innerHTML + this._creatSting(this.oIpnt.value, e.value, 'self');
-                        socket.emit('msg', { msg: this.oIpnt.value, name: e.value });
-                        this.oIpnt.value = '';
-                        //存储信息 addmsg
-                        let oDate = new Date();
-                        let dateStr = `${oDate.getFullYear()}-${oDate.getMonth()+1}-${oDate.getDate()} ${oDate.getHours()}:${oDate.getMinutes()}:${oDate.getSeconds()}`
-                        axios.get('/addmsg', {
-                            params: {
-                                'username': e.value,
-                                'roomid': w.index,
-                                'datatime': dateStr,
-                                'msg': oInputValue,
-                            }
-                        }).then(function(response) {
-                            console.log(response.data);
-                        }).catch(function(response) {
-                            console.log(response.data);
-                        });
-                        //存储信息
+                        this._showmsg(e, w, socket);
                     });
+                    this.oIpnt.addEventListener('keypress', (ev) => {
+                        console.log(ev.which)
+                        if (ev.which == 13) {
+                            this._showmsg(e, w, socket);
+                            this.oIpnt.value = '';
+                        }
+
+                    }, true);
 
                 })
 
             }
         });
+    }
+    _showmsg(e, w, socket) {
+        var oInputValue = this.oIpnt.value;
+        if (!this.oIpnt.value) return alert("亲 您什么都没写");
+        this.oList.innerHTML = this.oList.innerHTML + this._creatSting(this.oIpnt.value, e.value, 'self');
+        socket.emit('msg', { msg: this.oIpnt.value, name: e.value });
+        this.oIpnt.value = '';
+        //存储信息 addmsg
+        let oDate = new Date();
+        let dateStr = `${oDate.getFullYear()}-${oDate.getMonth()+1}-${oDate.getDate()} ${oDate.getHours()}:${oDate.getMinutes()}:${oDate.getSeconds()}`
+        axios.get('/addmsg', {
+            params: {
+                'username': e.value,
+                'roomid': w.index,
+                'datatime': dateStr,
+                'msg': oInputValue,
+            }
+        }).then(function(response) {
+            console.log(response.data);
+        }).catch(function(response) {
+            console.log(response.data);
+        });
+        //存储信息
     }
     _addmsgToViews(list, roomid, num, oname, cb) {
         axios.get('/getmsg', {
