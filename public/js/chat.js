@@ -193,4 +193,62 @@ class Chat {
         }
         return Arr;
     }
+    _getmsgforpeer(myid, loginid) {
+        var connectedPeers = {};
+        let peer = new Peer(myid, {
+            host: 'localhost',
+            port: 9000,
+            path: '/myapp',
+            debug: 1,
+            config: {
+                'iceServers': [{
+                    url: 'stun:stun.l.google.com:19302'
+                }]
+            }
+        });
+        peer.on('open', function(id) {
+            console.log(id);
+        });
+        peer.on('connection', function(c) {
+            console.log('显示连接的id' + c.peer);
+            //反向连接
+            if (!connectedPeers[c.peer]) {
+                let coon = peer.connect(c.peer, {
+                    label: 'chat',
+                });
+                coon.on('open', function() {
+                    connectedPeers[coon.peer] = coon;
+                });
+                coon.on('error', function(err) {
+                    console.log(err);
+                });
+                c.on('data', function(data) {
+                    console.log('有信息来了')
+                    oBox.innerHTML = oBox.innerHTML + '<br/>' + data;
+                    //需要显示出来 并给浏览器缓存一份
+                });
+                c.on('close', function() {
+                    console.log(c.peer + ' 已断开.');
+                });
+            }
+            //反向连接结束
+
+
+
+        });
+        peer.on('error', function(err) {
+            console.log(err);
+        });
+        //连接已登录用户id获取其缓存的msg数据
+        let conn = peer.connect(loginid, {
+            label: 'chat',
+        });
+        conn.on('open', function() {
+            connectedPeers[conn] = conn;
+        });
+        conn.on('error', function(err) {
+            console.log(err);
+        });
+
+    }
 }

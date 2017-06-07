@@ -28,7 +28,8 @@
         let oBtn1 = document.querySelector('#btn1');
         let oInput1 = document.querySelector('#inputbox1');
         let oBox = document.querySelector('#databox');
-        var connectedPeers = {};
+        let connectedPeers = {};
+
         let peer = new Peer('<%= id %>', {
             host: 'localhost',
             port: 9000,
@@ -45,8 +46,6 @@
         });
         peer.on('connection', function(c) {
             console.log('显示连接的id' + c.peer);
-            // c.open = true;
-            // connectedPeers[c.peer] = c;
             //反向连接
             if (!connectedPeers[c.peer]) {
                 let coon = peer.connect(c.peer, {
@@ -54,44 +53,57 @@
                 });
                 coon.on('open', function() {
                     connectedPeers[coon.peer] = coon;
+                    coon.send('知道了 数据给你');
                 });
                 coon.on('error', function(err) {
                     console.log(err);
                 });
+                //反向连接结束
+                c.on('data', function(data) {
+                    console.log('有信息来了')
+                    oBox.innerHTML = oBox.innerHTML + '<br/>' + data;
+                });
+                c.on('close', function() {
+                    console.log(c.peer + ' 已断开.');
+                });
             }
-            //反向连接结束
-            c.on('data', function(data) {
-                console.log('有信息来了')
-                oBox.innerHTML = oBox.innerHTML + '<br/>' + data;
-            });
-            c.on('close', function() {
-                console.log(c.peer + ' 已断开.');
-            });
+
 
 
         });
         peer.on('error', function(err) {
             console.log(err);
         });
-        oBtn.addEventListener('click', () => {
-            let conn = peer.connect(oInput.value, {
-                label: 'chat',
-            });
-            conn.on('open', function() {
-                connectedPeers[conn] = conn;
-            });
-
-            conn.on('error', function(err) {
-                console.log(err);
-            });
-        })
-        oBtn1.addEventListener('click', function() {
-            console.log(oInput1.value)
-            for (key in connectedPeers) {
-                console.log(connectedPeers[key]);
-                connectedPeers[key].send(oInput1.value);
-            }
+        let conn = peer.connect('<%= id-1 %>', {
+            label: 'chat',
         });
+        conn.on('open', function() {
+            connectedPeers[conn] = conn;
+            conn.send('嘿 给我数据');
+        });
+
+        conn.on('error', function(err) {
+            console.log(err);
+        });
+        // oBtn.addEventListener('click', () => {
+        //     let conn = peer.connect(oInput.value, {
+        //         label: 'chat',
+        //     });
+        //     conn.on('open', function() {
+        //         connectedPeers[conn] = conn;
+        //     });
+
+        //     conn.on('error', function(err) {
+        //         console.log(err);
+        //     });
+        // })
+        // oBtn1.addEventListener('click', function() {
+        //     console.log(oInput1.value)
+        //     for (key in connectedPeers) {
+        //         console.log(connectedPeers[key]);
+        //         connectedPeers[key].send(oInput1.value);
+        //     }
+        // });
     </script>
 </body>
 

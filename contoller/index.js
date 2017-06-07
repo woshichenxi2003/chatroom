@@ -5,8 +5,8 @@ router.get('/chat', async(ctx, next) => {
     await ctx.render('index');
 });
 router.get('/peer', async(ctx, next) => {
+
     await ctx.render('peer', { id: idStr });
-    // await ctx.render('peer', { id: idStr });
     idStr = idStr + 1;
 });
 router.get('/peer1', async(ctx, next) => {
@@ -15,7 +15,6 @@ router.get('/peer1', async(ctx, next) => {
 
 });
 router.get('/getuser', con.getuser());
-// http://localhost:3000/getuser?roomid=0
 router.get('/adduser', con.adduser());
 router.get('/addmsg', con.addmsg());
 router.get('/getmsg', con.getmsg());
