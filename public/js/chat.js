@@ -36,30 +36,32 @@ class Chat {
                             //取数据库  数据库也得修改要记录用户的登录状态 还得再做一个接口再用户退出时数据库记录 退出的接口在CHAT.js上应用
                             let myid = response.data.id;
                             let otherid = response.data.loginid;
-                            console.log(myid, otherid);
+                            // console.log(myid, otherid);
                             //给此用户注册peer对象
-                            this.peer = new Peer(myid, {
-                                host: 'localhost',
-                                port: 9000,
-                                path: '/myapp',
-                                debug: 1,
-                                config: {
-                                    'iceServers': [{
-                                        url: 'stun:stun.l.google.com:19302'
-                                    }]
-                                }
-                            });
-                            this.peer.on('open', function(id) {
-                                console.log(id);
-                            });
-                            this.peer.on('connection', (c) => {
-                                console.log('显示连接的id' + c.peer);
-                                c.on('data', (data) => {
-                                    console.log(data);
-                                    let arr = [];
-                                    data.forEach((element) => {
-                                        if (element.username == this.username) {
-                                            this.oList.innerHTML = `<div class="msg-item msg-item-self">
+                            let once = true;
+                            if (once) {
+                                this.peer = new Peer(socket.id, {
+                                    host: 'localhost',
+                                    port: 9000,
+                                    path: '/myapp',
+                                    debug: 1,
+                                    config: {
+                                        'iceServers': [{
+                                            url: 'stun:stun.l.google.com:19302'
+                                        }]
+                                    }
+                                });
+                                this.peer.on('open', function(id) {
+                                    // console.log(id);
+                                });
+                                this.peer.on('connection', (c) => {
+                                    console.log('显示连接的id' + c.peer);
+                                    c.on('data', (data) => {
+                                        console.log(data);
+                                        let arr = [];
+                                        data.forEach((element) => {
+                                            if (element.username == this.username) {
+                                                this.oList.innerHTML = `<div class="msg-item msg-item-self">
                                                             <i class="msg-user mui-icon mui-icon-person">
                                                                 <div class="namename">${element.username}</div>
                                                             </i>
@@ -72,8 +74,8 @@ class Chat {
                                                             <div class="mui-item-clear"></div>
                                                         </div>` + this.oList.innerHTML;
 
-                                        } else {
-                                            this.oList.innerHTML = `<div class="msg-item">
+                                            } else {
+                                                this.oList.innerHTML = `<div class="msg-item">
                                                      <i class="msg-user mui-icon mui-icon-person">
                                                          <div class="namename">${element.username}</div>
                                                      </i>
@@ -85,28 +87,31 @@ class Chat {
                                                     </div>
                                                     <div class="mui-item-clear"></div>
                                                 </div>` + this.oList.innerHTML;
-                                        }
-                                        arr.push(element);
+                                            }
+                                            arr.push(element);
+                                        });
+                                        this.msg[this.userroom] = arr;
                                     });
-                                    this.msg[roomid] = arr;
+
+                                    c.on('close', function() {
+                                        console.log(c.peer + ' 已断开.');
+                                    });
+
+
                                 });
-
-                                c.on('close', function() {
-                                    console.log(c.peer + ' 已断开.');
+                                this.peer.on('error', (err) => {
+                                    console.log(err);
+                                    this._getmsgbyapi(this.userroom, 5);
                                 });
-
-
-                            });
-                            this.peer.on('error', function(err) {
-                                console.log(err);
-                                this._getmsgbyapi();
-                            });
-                            //连接其他用户发出调用
-                            if (otherid) {
-                                socket.emit('getmsg', { loginid: otherid, roomid: w.index });
-                            } else {
-                                //数据库调用数据并显示在页面上
-                                this._getmsgbyapi();
+                                //连接其他用户发出调用
+                                if (otherid) {
+                                    //发出请求连接事件
+                                    socket.emit('getmsg', { roomid: w.index, loginid: socket.id });
+                                } else {
+                                    //数据库调用数据并显示在页面上
+                                    this._getmsgbyapi(this.userroom, 5);
+                                }
+                                once = false;
                             }
 
                         }).catch((err) => {
@@ -127,6 +132,8 @@ class Chat {
                     });
                     //监听一个给其他用户请求数据的事件 并给用户返回数据
                     socket.on('postmsg', (data) => {
+                        console.log('我收到了一个请求 数据是：');
+                        console.log(data);
                         let conn = this.peer.connect(data.loginid, {
                             label: 'chat',
                         });
@@ -138,21 +145,9 @@ class Chat {
                             console.log(err);
                         });
                     });
-                    //监听结束
-                    // //接收专递过来的信息 并显示到用户界面
-                    // socket.on('getmsg', (data) => {
-                    //     let conn = peer.connect(data.loginid, {
-                    //         label: 'chat',
-                    //     });
-                    //     conn.on('open', () => {
-                    //         conn.send(this.msg[this.userroom]);
-                    //     });
-
-                    //     conn.on('error', function(err) {
-                    //         console.log(err);
-                    //     });
-                    // });
-                    // //监听结束
+                    socket.on('gobase', (data) => {
+                        this._getmsgbyapi(this.userroom, 5)
+                    });
                     this.oBtn.addEventListener('click', () => {
                         this._showmsg(e, w, socket);
                     });
@@ -402,19 +397,17 @@ class Chat {
         });
 
     };
-    _getmsgbyapi() {
+    _getmsgbyapi(roomid, num) {
         axios.get('/getmsg', {
             params: {
                 'roomid': roomid,
                 'num': num
             }
         }).then((response) => {
-            console.log(response.data)
-            console.log(oname)
             var arr = [];
             response.data.forEach((element) => {
-                if (element.username == oname) {
-                    list.innerHTML = `<div class="msg-item msg-item-self">
+                if (element.username == this.username) {
+                    this.oList.innerHTML = `<div class="msg-item msg-item-self">
                                                             <i class="msg-user mui-icon mui-icon-person">
                                                                 <div class="namename">${element.username}</div>
                                                             </i>
@@ -425,10 +418,10 @@ class Chat {
                                                                 <div class="msg-content-arrow"></div>
                                                             </div>
                                                             <div class="mui-item-clear"></div>
-                                                        </div>` + list.innerHTML;
+                                                        </div>` + this.oList.innerHTML;
 
                 } else {
-                    list.innerHTML = `<div class="msg-item">
+                    this.oList.innerHTML = `<div class="msg-item">
                                                      <i class="msg-user mui-icon mui-icon-person">
                                                          <div class="namename">${element.username}</div>
                                                      </i>
@@ -439,13 +432,13 @@ class Chat {
                                                         <div class="msg-content-arrow"></div>
                                                     </div>
                                                     <div class="mui-item-clear"></div>
-                                                </div>` + list.innerHTML;
+                                                </div>` + this.oList.innerHTML;
                 }
                 arr.push(element);
             }, this);
             this.msg[roomid] = arr;
             // console.log(this.msg);
-            cb();
+            // cb();
         }).catch(function(err) {
             console.log(err);
         });
