@@ -30,6 +30,9 @@ class Chat {
             socket.on('msg', (data) => {
                 socket.broadcast.to(userinfo.room).emit("showmsg", data);
             })
+            socket.on('getmsg', (data) => {
+                socket.broadcast.to(userinfo.room).emit("postmsg", data);
+            })
             socket.on('disconnect', async(data) => {
                 // 在这加东西记录用户断开 同步数据库
                 let option = {

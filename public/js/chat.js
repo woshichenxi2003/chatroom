@@ -37,9 +37,78 @@ class Chat {
                             let myid = response.data.id;
                             let otherid = response.data.loginid;
                             console.log(myid, otherid);
-                            this._addmsgToViews(myid, otherid, this.oList, w.index, 5, e.value, () => {
-                                this.oList.innerHTML = this.oList.innerHTML + this._creatSting('您', e.value, 'hello');
+                            //给此用户注册peer对象
+                            this.peer = new Peer(myid, {
+                                host: 'localhost',
+                                port: 9000,
+                                path: '/myapp',
+                                debug: 1,
+                                config: {
+                                    'iceServers': [{
+                                        url: 'stun:stun.l.google.com:19302'
+                                    }]
+                                }
                             });
+                            this.peer.on('open', function(id) {
+                                console.log(id);
+                            });
+                            this.peer.on('connection', (c) => {
+                                console.log('显示连接的id' + c.peer);
+                                c.on('data', (data) => {
+                                    console.log(data);
+                                    let arr = [];
+                                    data.forEach((element) => {
+                                        if (element.username == this.username) {
+                                            this.oList.innerHTML = `<div class="msg-item msg-item-self">
+                                                            <i class="msg-user mui-icon mui-icon-person">
+                                                                <div class="namename">${element.username}</div>
+                                                            </i>
+                                                            <div class="msg-content">
+                                                                <div class="msg-content-inner">
+                                                                    ${element.msg}
+                                                                </div>
+                                                                <div class="msg-content-arrow"></div>
+                                                            </div>
+                                                            <div class="mui-item-clear"></div>
+                                                        </div>` + this.oList.innerHTML;
+
+                                        } else {
+                                            this.oList.innerHTML = `<div class="msg-item">
+                                                     <i class="msg-user mui-icon mui-icon-person">
+                                                         <div class="namename">${element.username}</div>
+                                                     </i>
+                                                    <div class="msg-content">
+                                                        <div class="msg-content-inner">
+                                                            ${element.msg}
+                                                        </div>
+                                                        <div class="msg-content-arrow"></div>
+                                                    </div>
+                                                    <div class="mui-item-clear"></div>
+                                                </div>` + this.oList.innerHTML;
+                                        }
+                                        arr.push(element);
+                                    });
+                                    this.msg[roomid] = arr;
+                                });
+
+                                c.on('close', function() {
+                                    console.log(c.peer + ' 已断开.');
+                                });
+
+
+                            });
+                            this.peer.on('error', function(err) {
+                                console.log(err);
+                                this._getmsgbyapi();
+                            });
+                            //连接其他用户发出调用
+                            if (otherid) {
+                                socket.emit('getmsg', { loginid: otherid, roomid: w.index });
+                            } else {
+                                //数据库调用数据并显示在页面上
+                                this._getmsgbyapi();
+                            }
+
                         }).catch((err) => {
                             console.log(err);
                         });
@@ -56,7 +125,34 @@ class Chat {
                     socket.on('outshow', (data) => {
                         this.oList.innerHTML = this.oList.innerHTML + this._creatSting(data, undefined, 'out');
                     });
+                    //监听一个给其他用户请求数据的事件 并给用户返回数据
+                    socket.on('postmsg', (data) => {
+                        let conn = this.peer.connect(data.loginid, {
+                            label: 'chat',
+                        });
+                        conn.on('open', () => {
+                            conn.send(this.msg[data.roomid]);
+                        });
 
+                        conn.on('error', function(err) {
+                            console.log(err);
+                        });
+                    });
+                    //监听结束
+                    // //接收专递过来的信息 并显示到用户界面
+                    // socket.on('getmsg', (data) => {
+                    //     let conn = peer.connect(data.loginid, {
+                    //         label: 'chat',
+                    //     });
+                    //     conn.on('open', () => {
+                    //         conn.send(this.msg[this.userroom]);
+                    //     });
+
+                    //     conn.on('error', function(err) {
+                    //         console.log(err);
+                    //     });
+                    // });
+                    // //监听结束
                     this.oBtn.addEventListener('click', () => {
                         this._showmsg(e, w, socket);
                     });
@@ -306,6 +402,53 @@ class Chat {
         });
 
     };
+    _getmsgbyapi() {
+        axios.get('/getmsg', {
+            params: {
+                'roomid': roomid,
+                'num': num
+            }
+        }).then((response) => {
+            console.log(response.data)
+            console.log(oname)
+            var arr = [];
+            response.data.forEach((element) => {
+                if (element.username == oname) {
+                    list.innerHTML = `<div class="msg-item msg-item-self">
+                                                            <i class="msg-user mui-icon mui-icon-person">
+                                                                <div class="namename">${element.username}</div>
+                                                            </i>
+                                                            <div class="msg-content">
+                                                                <div class="msg-content-inner">
+                                                                    ${element.msg}
+                                                                </div>
+                                                                <div class="msg-content-arrow"></div>
+                                                            </div>
+                                                            <div class="mui-item-clear"></div>
+                                                        </div>` + list.innerHTML;
 
+                } else {
+                    list.innerHTML = `<div class="msg-item">
+                                                     <i class="msg-user mui-icon mui-icon-person">
+                                                         <div class="namename">${element.username}</div>
+                                                     </i>
+                                                    <div class="msg-content">
+                                                        <div class="msg-content-inner">
+                                                            ${element.msg}
+                                                        </div>
+                                                        <div class="msg-content-arrow"></div>
+                                                    </div>
+                                                    <div class="mui-item-clear"></div>
+                                                </div>` + list.innerHTML;
+                }
+                arr.push(element);
+            }, this);
+            this.msg[roomid] = arr;
+            // console.log(this.msg);
+            cb();
+        }).catch(function(err) {
+            console.log(err);
+        });
+    }
 
 }
