@@ -1,4 +1,4 @@
-const getData = require('../lib/getNum.js')
+let getData = require('../lib/getNum.js')
 const getNumPost = require('../lib/getNumPost.js')
 let con = {
     getuser: () => {
@@ -6,7 +6,8 @@ let con = {
             let option = {
                 'roomid': ctx.query.roomid
             }
-            let data = await getData(`http://59.110.243.215/getuser.php`, option);
+            let data = await getData(`http://localhost/chat/getuser.php`, option);
+            // let data = await getData(`http://59.110.243.215/getuser.php`, option);
             ctx.body = data;
         }
     },
@@ -16,7 +17,8 @@ let con = {
                 'roomid': ctx.query.roomid,
                 'num': ctx.query.num,
             }
-            let data = await getData(`http://59.110.243.215/getmsg.php`, option);
+            let data = await getData(`http://localhost/chat/getmsg.php`, option);
+            // let data = await getData(`http://59.110.243.215/getmsg.php`, option);
             ctx.body = data;
         }
     },
@@ -26,7 +28,8 @@ let con = {
                 'username': ctx.query.username,
                 'roomid': ctx.query.roomid
             }
-            let data = await getData(`http://59.110.243.215/adduser.php`, options);
+            let data = await getData(`http://localhost/chat/adduser.php`, options);
+            // let data = await getData(`http://59.110.243.215/adduser.php`, options);
             ctx.body = data;
         }
     },
@@ -38,7 +41,8 @@ let con = {
                 'datatime': ctx.query.datatime,
                 'msg': ctx.query.msg,
             }
-            let data = await getData(`http://59.110.243.215/addmsg.php`, options);
+            let data = await getData(`http://localhost/chat/addmsg.php`, options);
+            // let data = await getData(`http://59.110.243.215/addmsg.php`, options);
             ctx.body = data;
         }
     }
